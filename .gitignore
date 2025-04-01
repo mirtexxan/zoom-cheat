@@ -1,0 +1,34 @@
+# === IGNORA LA CARTELLA DEGLI SCREENSHOT ===
+screenshots/
+
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# === ENVIRONMENT ===
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# === SYSTEM ===
+.DS_Store
+Thumbs.db
+
+# === EDITOR ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === LOGS / CACHE ===
+*.log
+*.tmp
+*.bak
+.cache/

@@ -9,6 +9,8 @@ import win32con
 import pygetwindow as gw
 import winsound
 from datetime import datetime
+import win32process
+import win32api
 
 # Finestra da cercare
 search_string = "Sondaggi or Poll"
@@ -37,10 +39,29 @@ def sanitize_filename(title):
 
 # 📸 Screenshot della finestra
 def capture_window_screenshot(hwnd, title):
-    if win32gui.IsIconic(hwnd):
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        time.sleep(0.2)
+    # Ripristina finestra se minimizzata
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+    time.sleep(0.2)
 
+    # FORZA IL FOCUS sulla finestra target
+    try:
+        fg_window = win32gui.GetForegroundWindow()
+        current_thread_id = win32api.GetCurrentThreadId()
+        fg_thread_id = win32process.GetWindowThreadProcessId(fg_window)[0]
+        target_thread_id = win32process.GetWindowThreadProcessId(hwnd)[0]
+
+        win32gui.AttachThreadInput(current_thread_id, fg_thread_id, True)
+        win32gui.AttachThreadInput(current_thread_id, target_thread_id, True)
+
+        win32gui.SetForegroundWindow(hwnd)
+        win32gui.SetFocus(hwnd)
+
+        win32gui.AttachThreadInput(current_thread_id, fg_thread_id, False)
+        win32gui.AttachThreadInput(current_thread_id, target_thread_id, False)
+    except Exception as e:
+        print(f"⚠️ Impossibile forzare il focus: {e}")
+
+    # Massimizza dopo il focus
     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
     time.sleep(0.5)
 
