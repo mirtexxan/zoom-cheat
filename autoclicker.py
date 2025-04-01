@@ -18,6 +18,7 @@ keywords = [k.strip().lower() for k in search_string.split("or")]
 
 # Tempo tra un controllo e l'altro
 check_interval = 5
+n_beeps = 5
 
 # Cartella contenente gli screenshot
 output_dir = "screenshots"
@@ -30,7 +31,7 @@ template_radio = "radio.png"
 
 # Trillo sonoro
 def play_trill():
-    for _ in range(5):
+    for _ in range(n_beeps):
         winsound.Beep(3000, 200)
         time.sleep(0.1)
 
@@ -83,20 +84,35 @@ def capture_window_screenshot(hwnd, title):
     return img_bgr, (x, y)
 
 # Trova un template nell'immagine
-def find_template_position(img_bgr, template_path, threshold=0.8):
-    template = cv2.imread(template_path, cv2.IMREAD_COLOR)
-    if template is None:
+def find_template_position(img_bgr, template_path, threshold=0.8, scales=np.linspace(0.5, 2, 15)):
+    template_orig = cv2.imread(template_path, cv2.IMREAD_COLOR)
+    if template_orig is None:
         print(f"❌ Template '{template_path}' non trovato.")
         return None
 
-    result = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
-    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+    best_val = -1
+    best_loc = None
+    best_size = None
 
-    if max_val >= threshold:
-        template_h, template_w = template.shape[:2]
-        return max_loc, (template_w, template_h)
+    for scale in scales:
+        template = cv2.resize(template_orig, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+        if template.shape[0] > img_bgr.shape[0] or template.shape[1] > img_bgr.shape[1]:
+            continue  # salta se il template è più grande dell'immagine
+
+        result = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        if max_val > best_val:
+            best_val = max_val
+            best_loc = max_loc
+            best_size = template.shape[1], template.shape[0]  # width, height
+            best_scale = scale
+
+    if best_val >= threshold:
+        print(f"🎯 Trovato con scala {best_scale:.2f}, confidenza: {best_val:.2f}")
+        return best_loc, best_size
     else:
-        print(f"❌ Template '{template_path}' non trovato nel frame.")
+        print(f"❌ Nessuna corrispondenza sopra soglia ({threshold}) trovata.")
         return None
 
 # 🖱️ Click relativo alla finestra
@@ -141,10 +157,10 @@ try:
         matching_windows = [w for w in gw.getAllWindows()
                             if any(kw in w.title.lower() for kw in keywords)]
         if matching_windows:
+            play_trill()
             for w in matching_windows:
                 print(f"\n▶️ Finestra trovata: '{w.title}'")
                 process_window_interaction(w._hWnd, w.title)
-            play_trill()
         else:
             print("❌ Nessuna finestra trovata.")
         time.sleep(check_interval)
