@@ -12,9 +12,12 @@ from datetime import datetime
 import win32process
 import win32api
 
-# Finestra da cercare
-search_string = "Sondaggi or Poll"
-keywords = [k.strip().lower() for k in search_string.split("or")]
+# 🔍 Parole chiave da cercare nel titolo della finestra
+keywords = [
+    "Sondaggi",
+    "Poll",
+]
+keywords = [k.strip().lower() for k in keywords]
 
 # Tempo tra un controllo e l'altro
 check_interval = 5
@@ -28,6 +31,9 @@ os.makedirs(output_dir, exist_ok=True)
 template_button="button.png"
 template_radio = "radio.png"
 
+# Parametri del template matching
+SCALES = np.linspace(0.5, 2, 15)
+THRESHOLD = 0.7
 
 # Trillo sonoro
 def play_trill():
@@ -43,28 +49,11 @@ def capture_window_screenshot(hwnd, title):
     # Ripristina finestra se minimizzata
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
     time.sleep(0.2)
-
-    # FORZA IL FOCUS sulla finestra target
-    try:
-        fg_window = win32gui.GetForegroundWindow()
-        current_thread_id = win32api.GetCurrentThreadId()
-        fg_thread_id = win32process.GetWindowThreadProcessId(fg_window)[0]
-        target_thread_id = win32process.GetWindowThreadProcessId(hwnd)[0]
-
-        win32gui.AttachThreadInput(current_thread_id, fg_thread_id, True)
-        win32gui.AttachThreadInput(current_thread_id, target_thread_id, True)
-
-        win32gui.SetForegroundWindow(hwnd)
-        win32gui.SetFocus(hwnd)
-
-        win32gui.AttachThreadInput(current_thread_id, fg_thread_id, False)
-        win32gui.AttachThreadInput(current_thread_id, target_thread_id, False)
-    except Exception as e:
-        print(f"⚠️ Impossibile forzare il focus: {e}")
-
-    # Massimizza dopo il focus
+    # Metti finestra in primo piano
+    win32gui.SetForegroundWindow(hwnd)
+    # Massimizza la finestra per garantire meno problemi sulla scala
     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-    time.sleep(0.5)
+    time.sleep(0.2)
 
     x, y, r, b = win32gui.GetWindowRect(hwnd)
     width, height = r - x, b - y
@@ -84,35 +73,42 @@ def capture_window_screenshot(hwnd, title):
     return img_bgr, (x, y)
 
 # Trova un template nell'immagine
-def find_template_position(img_bgr, template_path, threshold=0.8, scales=np.linspace(0.5, 2, 15)):
+def find_template_position(img_bgr_original, template_path, threshold=THRESHOLD, scales=SCALES):
     template_orig = cv2.imread(template_path, cv2.IMREAD_COLOR)
     if template_orig is None:
         print(f"❌ Template '{template_path}' non trovato.")
         return None
 
+    template_h, template_w = template_orig.shape[:2]
+
     best_val = -1
-    best_loc = None
-    best_size = None
+    best_pos = None
+    best_scale = 1.0
 
     for scale in scales:
-        template = cv2.resize(template_orig, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-        if template.shape[0] > img_bgr.shape[0] or template.shape[1] > img_bgr.shape[1]:
-            continue  # salta se il template è più grande dell'immagine
+        scaled_img = cv2.resize(img_bgr_original, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
 
-        result = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
+        if scaled_img.shape[0] < template_h or scaled_img.shape[1] < template_w:
+            continue  # Immagine troppo piccola
+
+        result = cv2.matchTemplate(scaled_img, template_orig, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
         if max_val > best_val:
             best_val = max_val
-            best_loc = max_loc
-            best_size = template.shape[1], template.shape[0]  # width, height
+            best_pos = max_loc
             best_scale = scale
 
     if best_val >= threshold:
-        print(f"🎯 Trovato con scala {best_scale:.2f}, confidenza: {best_val:.2f}")
-        return best_loc, best_size
+        # Correggi la posizione in base alla scala
+        corrected_x = int(best_pos[0] / best_scale)
+        corrected_y = int(best_pos[1] / best_scale)
+        scaled_template_w = int(template_w / best_scale)
+        scaled_template_h = int(template_h / best_scale)
+        print(f"🎯 Trovato con scala {best_scale:.2f}, confidenza {best_val:.2f}")
+        return (corrected_x, corrected_y), (scaled_template_w, scaled_template_h)
     else:
-        print(f"❌ Nessuna corrispondenza sopra soglia ({threshold}) trovata.")
+        print("❌ Nessuna corrispondenza trovata sopra soglia.")
         return None
 
 # 🖱️ Click relativo alla finestra
@@ -120,8 +116,8 @@ def click_at_position(screen_origin, template_pos, template_size):
     x0, y0 = screen_origin
     tx, ty = template_pos
     tw, th = template_size
-    click_x = x0 + tx + tw // 2
-    click_y = y0 + ty + th // 2
+    click_x = round(x0 + tx + tw / 2)
+    click_y = round(y0 + ty + th / 2)
     print(f"🖱️ Clic in ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
@@ -150,8 +146,9 @@ def process_window_interaction(hwnd, title):
     else:
         print("🚫 Bottone non cliccato: serve radio selezionato.")
 
+
 # 🔁 Loop principale
-print(f"🕵️ Monitoraggio finestre per: '{search_string}'")
+print(f"🕵️ Monitoraggio finestre per: '{keywords}'")
 try:
     while True:
         matching_windows = [w for w in gw.getAllWindows()
@@ -159,8 +156,11 @@ try:
         if matching_windows:
             play_trill()
             for w in matching_windows:
-                print(f"\n▶️ Finestra trovata: '{w.title}'")
-                process_window_interaction(w._hWnd, w.title)
+                try:
+                    print(f"\n▶️ Finestra trovata: '{w.title}'")
+                    process_window_interaction(w._hWnd, w.title)
+                except Exception as e:
+                    print(f"⚠️ Errore durante l'interazione con la finestra '{w.title}': {e}")
         else:
             print("❌ Nessuna finestra trovata.")
         time.sleep(check_interval)
