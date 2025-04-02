@@ -1,1 +1,1 @@
-pyinstaller --onefile --noconsole --icon=daisy.ico --distpath=. autoclicker.py
+pyinstaller --onefile --icon=daisy.ico --distpath=. autoclicker.py
