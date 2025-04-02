@@ -1,5 +1,7 @@
 # === IGNORA LA CARTELLA DEGLI SCREENSHOT ===
 screenshots/
+build/
+*.spec
 
 # === PYTHON ===
 __pycache__/
