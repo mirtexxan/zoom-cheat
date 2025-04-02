@@ -32,7 +32,7 @@ template_button="button.png"
 template_radio = "radio.png"
 
 # Parametri del template matching
-SCALES = np.linspace(0.5, 2, 15)
+SCALES = np.linspace(0.5, 2, 20)
 THRESHOLD = 0.7
 
 # Trillo sonoro
@@ -45,16 +45,7 @@ def sanitize_filename(title):
     return "".join(c if c.isalnum() else "_" for c in title)[:50]
 
 # 📸 Screenshot della finestra
-def capture_window_screenshot(hwnd, title):
-    # Ripristina finestra se minimizzata
-    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-    time.sleep(0.2)
-    # Metti finestra in primo piano
-    win32gui.SetForegroundWindow(hwnd)
-    # Massimizza la finestra per garantire meno problemi sulla scala
-    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-    time.sleep(0.2)
-
+def capture_window_screenshot(hwnd, title, prefix=""):
     x, y, r, b = win32gui.GetWindowRect(hwnd)
     width, height = r - x, b - y
 
@@ -66,7 +57,7 @@ def capture_window_screenshot(hwnd, title):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_title = sanitize_filename(title)
-        filename = os.path.join(output_dir, f"{safe_title}_{timestamp}.png")
+        filename = os.path.join(output_dir, f"{prefix}{safe_title}_{timestamp}.png")
         cv2.imwrite(filename, img_bgr)
         print(f"✅ Screenshot salvato: {filename}")
 
@@ -123,6 +114,15 @@ def click_at_position(screen_origin, template_pos, template_size):
 
 # 🤖 Processa una finestra: screenshot + interazioni
 def process_window_interaction(hwnd, title):
+    # Ripristina finestra se minimizzata
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+    time.sleep(0.2)
+    # Metti finestra in primo piano
+    win32gui.SetForegroundWindow(hwnd)
+    # Massimizza la finestra per garantire meno problemi sulla scala
+    win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+    time.sleep(0.2)
+    
     img_bgr, origin = capture_window_screenshot(hwnd, title)
 
     # Trova e clicca radio button (priorità a radio1)
@@ -131,20 +131,23 @@ def process_window_interaction(hwnd, title):
     if radio:
         print("✅ Radio button 1 trovato.")
         click_at_position(origin, *radio)
-        selected_radio = "radio"
     else:
         print("⚠️ Nessun radio button trovato.")
         return
 
-    time.sleep(0.3)
+    time.sleep(1)
 
     # Trova e clicca bottone solo se un radio è stato selezionato
     button = find_template_position(img_bgr, template_button)
-    if button and selected_radio:
+    if not button:
+        button = find_template_position(img_bgr, template_button_alt)
+
+    if button:
         print("✅ Bottone trovato. Procedo con click.")
+        capture_window_screenshot(hwnd, title, prefix="CLICKED_")
         click_at_position(origin, *button)
     else:
-        print("🚫 Bottone non cliccato: serve radio selezionato.")
+        print("🚫 Bottone invia non trovato.")
 
 
 # 🔁 Loop principale
