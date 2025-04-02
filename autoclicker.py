@@ -44,6 +44,13 @@ def play_trill():
 def sanitize_filename(title):
     return "".join(c if c.isalnum() else "_" for c in title)[:50]
 
+def avoid_standby():
+    x, y = pyautogui.position()
+    pyautogui.moveTo(x + 1, y)
+    pyautogui.moveTo(x - 1, y)
+    pyautogui.moveTo(x, y)
+    pyautogui.press('shift')
+
 # 📸 Screenshot della finestra
 def capture_window_screenshot(hwnd, title, prefix=""):
     x, y, r, b = win32gui.GetWindowRect(hwnd)
@@ -65,41 +72,41 @@ def capture_window_screenshot(hwnd, title, prefix=""):
 
 # Trova un template nell'immagine
 def find_template_position(img_bgr_original, template_path, threshold=THRESHOLD, scales=SCALES):
-    template_orig = cv2.imread(template_path, cv2.IMREAD_COLOR)
-    if template_orig is None:
+    template = cv2.imread(template_path, cv2.IMREAD_COLOR)
+    if template is None:
         print(f"❌ Template '{template_path}' non trovato.")
         return None
 
-    template_h, template_w = template_orig.shape[:2]
+    template_h, template_w = template.shape[:2]
 
-    best_val = -1
-    best_pos = None
+    best_match = None
+    best_y = float('inf')
     best_scale = 1.0
 
     for scale in scales:
-        scaled_img = cv2.resize(img_bgr_original, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-
+        scaled_img = cv2.resize(img_bgr_original, (0, 0), fx=scale, fy=scale)
         if scaled_img.shape[0] < template_h or scaled_img.shape[1] < template_w:
-            continue  # Immagine troppo piccola
+            continue
 
-        result = cv2.matchTemplate(scaled_img, template_orig, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+        result = cv2.matchTemplate(scaled_img, template, cv2.TM_CCOEFF_NORMED)
+        y_coords, x_coords = np.where(result >= threshold)
 
-        if max_val > best_val:
-            best_val = max_val
-            best_pos = max_loc
-            best_scale = scale
+        for x, y in zip(x_coords, y_coords):
+            corrected_x = int(x / scale)
+            corrected_y = int(y / scale)
 
-    if best_val >= threshold:
-        # Correggi la posizione in base alla scala
-        corrected_x = int(best_pos[0] / best_scale)
-        corrected_y = int(best_pos[1] / best_scale)
-        scaled_template_w = int(template_w / best_scale)
-        scaled_template_h = int(template_h / best_scale)
-        print(f"🎯 Trovato con scala {best_scale:.2f}, confidenza {best_val:.2f}")
-        return (corrected_x, corrected_y), (scaled_template_w, scaled_template_h)
+            if corrected_y < best_y:
+                best_y = corrected_y
+                best_match = (corrected_x, corrected_y)
+                best_scale = scale
+
+    if best_match:
+        scaled_w = int(template_w / best_scale)
+        scaled_h = int(template_h / best_scale)
+        print(f"🎯 Match più in alto a y={best_y}, scala={best_scale:.2f}")
+        return best_match, (scaled_w, scaled_h)
     else:
-        print("❌ Nessuna corrispondenza trovata sopra soglia.")
+        print(f"❌ Nessun match sopra soglia {threshold} per {template_path}")
         return None
 
 # 🖱️ Click relativo alla finestra
@@ -137,13 +144,10 @@ def process_window_interaction(hwnd, title):
 
     time.sleep(1)
 
-    # Trova e clicca bottone solo se un radio è stato selezionato
+    # Trova e clicca bottone
     button = find_template_position(img_bgr, template_button)
-    if not button:
-        button = find_template_position(img_bgr, template_button_alt)
-
     if button:
-        print("✅ Bottone trovato. Procedo con click.")
+        print("✅ Bottone trovato.")
         capture_window_screenshot(hwnd, title, prefix="CLICKED_")
         click_at_position(origin, *button)
     else:
@@ -166,6 +170,7 @@ try:
                     print(f"⚠️ Errore durante l'interazione con la finestra '{w.title}': {e}")
         else:
             print("❌ Nessuna finestra trovata.")
+        avoid_standby()
         time.sleep(check_interval)
 except KeyboardInterrupt:
     print("\n🛑 Monitoraggio interrotto.")
