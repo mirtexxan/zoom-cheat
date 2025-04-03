@@ -12,7 +12,7 @@ from datetime import datetime
 import win32process
 import win32api
 
-# 🔍 Parole chiave da cercare nel titolo della finestra
+# Parole chiave da cercare nel titolo della finestra
 keywords = [
     "Sondaggi",
     "Poll",
@@ -41,6 +41,9 @@ def play_trill():
         winsound.Beep(3000, 200)
         time.sleep(0.1)
 
+def timestamp():
+    return datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+
 def sanitize_filename(title):
     return "".join(c if c.isalnum() else "_" for c in title)[:50]
 
@@ -51,7 +54,7 @@ def avoid_standby():
     pyautogui.moveTo(x, y)
     pyautogui.press('shift')
 
-# 📸 Screenshot della finestra
+# Screenshot della finestra
 def capture_window_screenshot(hwnd, title, prefix=""):
     x, y, r, b = win32gui.GetWindowRect(hwnd)
     width, height = r - x, b - y
@@ -61,16 +64,15 @@ def capture_window_screenshot(hwnd, title, prefix=""):
         sct_img = sct.grab(monitor)
         img = np.array(sct_img)
         img_bgr = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         safe_title = sanitize_filename(title)
-        filename = os.path.join(output_dir, f"{prefix}{safe_title}_{timestamp}.png")
+        filename = os.path.join(output_dir, f"{prefix}{timestamp()}_{safe_title}.png")
         cv2.imwrite(filename, img_bgr)
         print(f"✅ Screenshot salvato: {filename}")
 
     return img_bgr, (x, y)
 
-# Trova un template nell'immagine
+# Trova un template nell'immagine (se più match, clicca quello più in alto)
 def find_template_position(img_bgr_original, template_path, threshold=THRESHOLD, scales=SCALES):
     template = cv2.imread(template_path, cv2.IMREAD_COLOR)
     if template is None:
@@ -109,7 +111,7 @@ def find_template_position(img_bgr_original, template_path, threshold=THRESHOLD,
         print(f"❌ Nessun match sopra soglia {threshold} per {template_path}")
         return None
 
-# 🖱️ Click relativo alla finestra
+# Click relativo alla finestra
 def click_at_position(screen_origin, template_pos, template_size):
     x0, y0 = screen_origin
     tx, ty = template_pos
@@ -119,27 +121,25 @@ def click_at_position(screen_origin, template_pos, template_size):
     print(f"🖱️ Clic in ({click_x}, {click_y})")
     pyautogui.click(click_x, click_y)
 
-# 🤖 Processa una finestra: screenshot + interazioni
+# Processa una finestra: screenshot + interazioni
 def process_window_interaction(hwnd, title):
-    # Ripristina finestra se minimizzata
+    # Ripristina finestra se minimizzata; metti in primo piano; massimizza
     win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
     time.sleep(0.2)
-    # Metti finestra in primo piano
     win32gui.SetForegroundWindow(hwnd)
-    # Massimizza la finestra per garantire meno problemi sulla scala
     win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
     time.sleep(0.2)
     
     img_bgr, origin = capture_window_screenshot(hwnd, title)
 
-    # Trova e clicca radio button (priorità a radio1)
+    # Trova e clicca radio button
     radio = find_template_position(img_bgr, template_radio)
 
     if radio:
         print("✅ Radio button 1 trovato.")
         click_at_position(origin, *radio)
     else:
-        print("⚠️ Nessun radio button trovato.")
+        print("⚠️ Nessun radio button trovato.\n")
         return
 
     time.sleep(1)
@@ -150,11 +150,12 @@ def process_window_interaction(hwnd, title):
         print("✅ Bottone trovato.")
         capture_window_screenshot(hwnd, title, prefix="CLICKED_")
         click_at_position(origin, *button)
+        print("\n")
     else:
-        print("🚫 Bottone invia non trovato.")
+        print("🚫 Bottone invia non trovato.\n")
 
 
-# 🔁 Loop principale
+# Loop principale
 print(f"🕵️ Monitoraggio finestre per: '{keywords}'")
 try:
     while True:
@@ -164,12 +165,12 @@ try:
             play_trill()
             for w in matching_windows:
                 try:
-                    print(f"\n▶️ Finestra trovata: '{w.title}'")
+                    print(f"\n[{timestamp()}] ▶️ Finestra trovata: '{w.title}'")
                     process_window_interaction(w._hWnd, w.title)
                 except Exception as e:
-                    print(f"⚠️ Errore durante l'interazione con la finestra '{w.title}': {e}")
+                    print(f"⚠️ Errore durante l'interazione con la finestra '{w.title}': {e}\n")
         else:
-            print("❌ Nessuna finestra trovata.")
+            print(f"[{timestamp()}] ❌ Nessuna finestra trovata.")
         avoid_standby()
         time.sleep(check_interval)
 except KeyboardInterrupt:
