@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import mss
 import os
+import sys
 import time
 import pyautogui
 import win32gui
@@ -24,12 +25,20 @@ check_interval = 5
 n_beeps = 5
 
 # Cartella contenente gli screenshot
-output_dir = "screenshots"
+def resource_path():
+    if getattr(sys, 'frozen', False):
+        # Se è un exe (pyinstaller)
+        return os.path.dirname(sys.executable)
+    else:
+        # Se è uno script .py
+        return os.path.dirname(os.path.abspath(__file__))
+
+output_dir = os.path.join(resource_path(), "screenshots")
 os.makedirs(output_dir, exist_ok=True)
 
 # Immagine del bottone da cercare
-template_button="button.png"
-template_radio = "radio.png"
+template_radio = os.path.join(resource_path(), "radio.png")
+template_button = os.path.join(resource_path(), "button.png")
 
 # Parametri del template matching
 SCALES = np.linspace(0.5, 2, 20)
@@ -42,7 +51,7 @@ def play_trill():
         time.sleep(0.1)
 
 def timestamp():
-    return datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+    return datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
 def sanitize_filename(title):
     return "".join(c if c.isalnum() else "_" for c in title)[:50]
@@ -66,7 +75,8 @@ def capture_window_screenshot(hwnd, title, prefix=""):
         img_bgr = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         
         safe_title = sanitize_filename(title)
-        filename = os.path.join(output_dir, f"{prefix}{timestamp()}_{safe_title}.png")
+        filename = f"{prefix}{timestamp()}_{safe_title}.png"
+        filename = os.path.join(output_dir, filename)
         cv2.imwrite(filename, img_bgr)
         print(f"✅ Screenshot salvato: {filename}")
 
@@ -156,7 +166,7 @@ def process_window_interaction(hwnd, title):
 
 
 # Loop principale
-print(f"🕵️ Monitoraggio finestre per: '{keywords}'")
+print(f"🕵 Monitoraggio finestre per: '{keywords}'")
 try:
     while True:
         matching_windows = [w for w in gw.getAllWindows()
