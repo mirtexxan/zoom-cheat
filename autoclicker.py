@@ -154,7 +154,9 @@ def process_window_interaction(hwnd, title):
 
     time.sleep(1)
 
-    # Trova e clicca bottone
+    # Trova e clicca il bottone "Invia". Cerca su diversi possibili template.
+    # Nota: è necessario cercare il tasto ingrigito (diventa blu solo dopo che è stato selezionato il radio)
+    #       perché al momento dello screenshot della finestra il tasto era ancora grigio. Tuttavia la posizione non cambia.
     for template in template_buttons:
         button = find_template_position(img_bgr, template)
         if button:
