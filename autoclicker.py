@@ -38,7 +38,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Immagine del bottone da cercare
 template_radio = os.path.join(resource_path(), "radio.png")
-template_button = os.path.join(resource_path(), "button.png")
+template_buttons = [os.path.join(resource_path(), "button-grey.png"), os.path.join(resource_path(), "button.png")]
 
 # Parametri del template matching
 SCALES = np.linspace(0.5, 2, 20)
@@ -155,7 +155,11 @@ def process_window_interaction(hwnd, title):
     time.sleep(1)
 
     # Trova e clicca bottone
-    button = find_template_position(img_bgr, template_button)
+    for template in template_buttons:
+        button = find_template_position(img_bgr, template)
+        if button:
+            break
+
     if button:
         print("✅ Bottone trovato.")
         capture_window_screenshot(hwnd, title, prefix="CLICKED_")
