@@ -36,6 +36,22 @@ def resource_path():
 output_dir = os.path.join(resource_path(), "screenshots")
 os.makedirs(output_dir, exist_ok=True)
 
+# Reindirizza stdout e stderr sia alla console che a un file log.txt
+class Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+            s.flush()
+    def flush(self):
+        for s in self.streams:
+            s.flush()
+
+log_path = os.path.join(output_dir, "log.txt")
+log_file = open(log_path, "a", encoding="utf-8")
+sys.stdout = sys.stderr = Tee(sys.stdout, log_file)
+
 # Immagine del bottone da cercare
 template_radio = os.path.join(resource_path(), "radio.png")
 template_buttons = [os.path.join(resource_path(), "button-grey.png"), os.path.join(resource_path(), "button.png")]
@@ -164,6 +180,9 @@ def process_window_interaction(hwnd, title):
 
     if button:
         print("✅ Bottone trovato.")
+        wait_time = np.random.uniform(0, 20)
+        print(f"⏳ Attendo {wait_time:.2f} secondi prima del clic...")
+        time.sleep(wait_time)
         capture_window_screenshot(hwnd, title, prefix="CLICKED_")
         click_at_position(origin, *button)
         print("\n")
@@ -190,4 +209,6 @@ try:
         avoid_standby()
         time.sleep(check_interval)
 except KeyboardInterrupt:
-    print("\n🛑 Monitoraggio interrotto.")
+    print("🛑 Monitoraggio interrotto.\n")
+    log_file.close()
+
