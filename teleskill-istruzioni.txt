@@ -1,0 +1,43 @@
+📦 SCRIPT AUTOMATICO PRESENZA TELESKILL - ISTRUZIONI
+
+Questo pacchetto contiene uno script per Tampermonkey che:
+✔️ Rileva la finestra "Verifica della presenza" su Teleskill
+✔️ Clicca in automatico su "PROSEGUI"
+✔️ Suona una sveglia per attirare l’attenzione
+✔️ Scrive nella console per confermare che è attivo
+
+--------------------------------------------------------
+1️⃣ INSTALLA TAMPERMONKEY
+--------------------------------------------------------
+Per Google Chrome / Microsoft Edge:
+🔗 https://tampermonkey.net/?ext=dhdg&browser=chrome
+
+Per Mozilla Firefox:
+🔗 https://tampermonkey.net/?ext=dhdg&browser=firefox
+
+Installa l'estensione cliccando su "Aggiungi a..." e conferma.
+
+--------------------------------------------------------
+2️⃣ INSTALLA LO SCRIPT
+--------------------------------------------------------
+✔️ Scarica il file: teleskill-presenza.user.js
+✔️ Trascinalo in una scheda del tuo browser (con Tampermonkey installato)
+✔️ Ti comparirà la finestra “Vuoi installare questo script?”
+✔️ Conferma con “Installa”
+✔️ Ricarica la pagina Teleskill
+
+--------------------------------------------------------
+3️⃣ VERIFICA CHE FUNZIONA
+--------------------------------------------------------
+👉 Apri la piattaforma: https://tlive.teleskill.it/...
+👉 Premi F12 → vai nella scheda "Console"
+👉 Dovresti vedere ogni 5 secondi:
+   [Tampermonkey] Script attivo...
+👉 Quando compare "PROSEGUI", verrà cliccato in automatico!
+
+--------------------------------------------------------
+📎 NOTE FINALI
+--------------------------------------------------------
+- Lo script funziona solo su https://tlive.teleskill.it/*
+- È sicuro: gira solo nel tuo browser e non invia dati
+- Se non funziona: assicurati di aver ricaricato la pagina Teleskill dopo l’installazione
