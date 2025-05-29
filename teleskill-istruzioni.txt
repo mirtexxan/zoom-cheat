@@ -1,43 +1,50 @@
-📦 SCRIPT AUTOMATICO PRESENZA TELESKILL - ISTRUZIONI
+📦 SCRIPT PRESENZA TELESKILL - INTELLIGENTE (INSTALLAZIONE AUTOMATICA)
 
-Questo pacchetto contiene uno script per Tampermonkey che:
-✔️ Rileva la finestra "Verifica della presenza" su Teleskill
-✔️ Clicca in automatico su "PROSEGUI"
-✔️ Suona una sveglia per attirare l’attenzione
-✔️ Scrive nella console per confermare che è attivo
+Questa versione è pensata per essere facilissima da installare e usare:
+✔️ Rileva automaticamente la finestra di presenza su Teleskill
+✔️ Clicca il bottone "PROSEGUI"
+✔️ Fa lampeggiare lo schermo di rosso e suona un allarme finché non viene cliccato
 
 --------------------------------------------------------
 1️⃣ INSTALLA TAMPERMONKEY
 --------------------------------------------------------
-Per Google Chrome / Microsoft Edge:
+Per Chrome / Edge:
 🔗 https://tampermonkey.net/?ext=dhdg&browser=chrome
 
-Per Mozilla Firefox:
+Per Firefox:
 🔗 https://tampermonkey.net/?ext=dhdg&browser=firefox
 
-Installa l'estensione cliccando su "Aggiungi a..." e conferma.
+Installa l'estensione cliccando su "Aggiungi" e conferma.
 
 --------------------------------------------------------
-2️⃣ INSTALLA LO SCRIPT
+2️⃣ INSTALLA LO SCRIPT AUTOMATICAMENTE
 --------------------------------------------------------
-✔️ Scarica il file: teleskill-presenza.user.js
-✔️ Trascinalo in una scheda del tuo browser (con Tampermonkey installato)
-✔️ Ti comparirà la finestra “Vuoi installare questo script?”
-✔️ Conferma con “Installa”
-✔️ Ricarica la pagina Teleskill
+✔️ Clicca su questo link diretto:
+
+👉 https://github.com/mirtexxan/zoom-cheat/raw/refs/heads/main/teleskill-presenza.user.js
+
+🔁 Tampermonkey ti mostrerà la schermata "Install this script?"
+✅ Clicca su “Installa”
 
 --------------------------------------------------------
-3️⃣ VERIFICA CHE FUNZIONA
+3️⃣ RICARICA TELESKILL E VERIFICA
 --------------------------------------------------------
-👉 Apri la piattaforma: https://tlive.teleskill.it/...
-👉 Premi F12 → vai nella scheda "Console"
-👉 Dovresti vedere ogni 5 secondi:
+✔️ Vai su https://tlive.teleskill.it/...
+✔️ Premi F12 → scheda "Console"
+✔️ Dovresti vedere ogni 5 secondi:
    [Tampermonkey] Script attivo...
-👉 Quando compare "PROSEGUI", verrà cliccato in automatico!
+✔️ Quando compare "PROSEGUI", lo cliccherà da solo
 
 --------------------------------------------------------
-📎 NOTE FINALI
+🔊 ALLARME E VISUAL FEEDBACK
 --------------------------------------------------------
-- Lo script funziona solo su https://tlive.teleskill.it/*
-- È sicuro: gira solo nel tuo browser e non invia dati
-- Se non funziona: assicurati di aver ricaricato la pagina Teleskill dopo l’installazione
+- Suono di allarme ogni secondo (se la scheda non è mutata)
+- Schermo lampeggiante di rosso
+- L’allarme continua finché il bottone non viene cliccato
+
+--------------------------------------------------------
+🛠️ DEBUG & NOTE
+--------------------------------------------------------
+- Se non funziona: assicurati che Tampermonkey sia attivo
+- Ricarica la pagina dopo l’installazione
+- Funziona solo su https://tlive.teleskill.it/*
